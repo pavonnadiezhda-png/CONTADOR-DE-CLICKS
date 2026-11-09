@@ -1,0 +1,139 @@
+import { useState } from "react";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const MENSAJE_MIN = 10;
+const MENSAJE_MAX = 500;
+
+function validar(campo, valor) {
+  const texto = valor.trim();
+
+  if (campo === "nombre") {
+    if (texto === "") return "Escribe tu nombre.";
+    if (texto.length < 2) return "El nombre debe tener al menos 2 letras.";
+  }
+
+  if (campo === "email") {
+    if (texto === "") return "Escribe tu correo electrónico.";
+    if (!EMAIL_RE.test(texto)) return "Escribe un correo válido, por ejemplo: nombre@correo.com.";
+  }
+
+  if (campo === "mensaje") {
+    if (texto === "") return "Cuéntame sobre tu proyecto.";
+    if (texto.length < MENSAJE_MIN)
+      return `El mensaje debe tener al menos ${MENSAJE_MIN} caracteres.`;
+    if (valor.length > MENSAJE_MAX) return `El mensaje no puede pasar de ${MENSAJE_MAX} caracteres.`;
+  }
+
+  return "";
+}
+
+function Campo({ id, etiqueta, error, children }) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-zinc-800">
+        {etiqueta}
+      </label>
+      <div className="mt-1">{children}</div>
+      <p id={`${id}-error`} role="alert" className="min-h-5 mt-1 text-sm text-red-700">
+        {error}
+      </p>
+    </div>
+  );
+}
+
+const claseEntrada = (hayError) =>
+  `w-full px-3 py-2 rounded-lg border text-zinc-900 bg-white placeholder-zinc-400 focus:outline-none focus:ring-4 ${
+    hayError
+      ? "border-red-500 focus:ring-red-200"
+      : "border-zinc-300 focus:border-fuchsia-600 focus:ring-fuchsia-200"
+  }`;
+
+export default function FormularioContacto() {
+  const [valores, setValores] = useState({ nombre: "", email: "", mensaje: "" });
+  const [tocados, setTocados] = useState({ nombre: false, email: false, mensaje: false });
+  const [estado, setEstado] = useState("editando"); // editando | enviando | enviado
+
+  const errores = {
+    nombre: validar("nombre", valores.nombre),
+    email: validar("email", valores.email),
+    mensaje: validar("mensaje", valores.mensaje),
+  };
+  const formularioValido = !errores.nombre && !errores.email && !errores.mensaje;
+
+  const manejarCambio = (e) => {
+    const { name, value } = e.target;
+    setValores((v) => ({ ...v, [name]: value }));
+  };
+
+  const manejarBlur = (e) => {
+    const { name } = e.target;
+    setTocados((t) => ({ ...t, [name]: true }));
+  };
+
+  const manejarEnvio = (e) => {
+    e.preventDefault();
+    // Al intentar enviar, se muestran los errores de todos los campos.
+    setTocados({ nombre: true, email: true, mensaje: true });
+    if (!formularioValido || estado === "enviando") return;
+
+    setEstado("enviando");
+    // Simulación del envío (aquí iría la llamada a un servidor).
+    setTimeout(() => {
+      console.log("Mensaje enviado:", valores);
+      setEstado("enviado");
+    }, 1200);
+  };
+
+  const enviarOtro = () => {
+    setValores({ nombre: "", email: "", mensaje: "" });
+    setTocados({ nombre: false, email: false, mensaje: false });
+    setEstado("editando");
+  };
+
+  const error = (campo) => (tocados[campo] ? errores[campo] : "");
+
+  return (
+    <main className="min-h-screen bg-zinc-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl grid md:grid-cols-5 rounded-2xl overflow-hidden shadow-xl">
+        {/* Panel de presentación */}
+        <section className="md:col-span-2 bg-zinc-900 text-white p-8 flex flex-col justify-between">
+          <div>
+            <p className="text-fuchsia-400 font-semibold">Carlos Díaz · Diseño gráfico</p>
+            <h1 className="mt-6 text-3xl font-bold leading-tight">
+              Cuéntame qué quieres crear
+            </h1>
+            <p className="mt-4 text-zinc-300">
+              Marca, packaging, ilustración o piezas para redes. Escríbeme los detalles y te
+              respondo con una propuesta.
+            </p>
+          </div>
+          <p className="mt-8 text-sm text-zinc-400">Respondo en menos de 48 horas.</p>
+        </section>
+
+        {/* Formulario / confirmación */}
+        <section className="md:col-span-3 bg-white p-8">
+          {estado === "enviado" ? (
+            <div role="status" className="h-full flex flex-col justify-center text-center">
+              <div className="mx-auto w-14 h-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-3xl">
+                ✓
+              </div>
+              <h2 className="mt-4 text-2xl font-bold text-zinc-900">¡Gracias por tu mensaje!</h2>
+              <p className="mt-2 text-zinc-600">
+                Recibí tu mensaje, {valores.nombre.trim()}. Te escribiré a {valores.email.trim()}{" "}
+                pronto.
+              </p>
+              <button
+                type="button"
+                onClick={enviarOtro}
+                className="mt-6 mx-auto px-5 py-2 rounded-lg border border-zinc-300 text-zinc-800 font-medium hover:bg-zinc-50 focus:outline-none focus:ring-4 focus:ring-zinc-300"
+              >
+                Enviar otro mensaje
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={manejarEnvio} noValidate>
+              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Formulario de contacto</h2>
+
+              <Campo id="nombre" etiqueta="Nombre" error={error("nombre")}>
+                <input
+                  id="nombre"
